@@ -9,6 +9,8 @@ import Modal from '@/components/ui/Modal';
 export default function DeleteModal({ isOpen, onClose, orden, onConfirm, loading }) {
   if (!orden) return null;
 
+  const compositeId = `${orden.oc}-${orden.linea_de_oc}`;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -19,7 +21,7 @@ export default function DeleteModal({ isOpen, onClose, orden, onConfirm, loading
           <Button variant="secondary" onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button variant="danger" onClick={() => onConfirm(orden.id)} loading={loading}>
+          <Button variant="danger" onClick={() => onConfirm(compositeId)} loading={loading}>
             Sí, eliminar
           </Button>
         </>
@@ -30,7 +32,7 @@ export default function DeleteModal({ isOpen, onClose, orden, onConfirm, loading
           ⚠️
         </div>
         <p style={{ color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', marginBottom: 'var(--space-2)' }}>
-          ¿Estás seguro de eliminar la orden <strong>{orden.id}</strong>?
+          ¿Estás seguro de eliminar la OC <strong>{orden.oc}</strong> Línea <strong>{orden.linea_de_oc}</strong>?
         </p>
         <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)' }}>
           {orden.proveedor} — {orden.descripcion}

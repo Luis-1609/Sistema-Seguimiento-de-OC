@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { MOCK_ORDENES } from '@/lib/constants';
 
 // Determinar si Google Sheets está configurado
 const isGoogleConfigured = () => {
@@ -13,7 +12,8 @@ const isGoogleConfigured = () => {
 
 /**
  * PUT /api/ordenes/[id]
- * Actualiza una orden de compra existente.
+ * Actualiza una orden de compra.
+ * El [id] es un composite "OC-LINEA" (ej: "642323-1").
  */
 export async function PUT(request, { params }) {
   try {
@@ -27,35 +27,38 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const now = new Date().toISOString().split('T')[0];
+    // Parsear composite ID: "642323-1" → oc=642323, linea=1
+    const [oc, linea] = id.split('-');
 
     if (isGoogleConfigured()) {
-      const { updateRow } = await import('@/lib/google-sheets');
+      const { findRowIndex, updateRowByIndex } = await import('@/lib/google-sheets');
 
-      const ordenActualizada = {
-        id,
-        fecha_creacion: body.fecha_creacion,
+      const rowIndex = await findRowIndex(oc, linea);
+      if (rowIndex === -1) {
+        return NextResponse.json(
+          { error: `Orden OC ${oc} Línea ${linea} no encontrada.` },
+          { status: 404 }
+        );
+      }
+
+      await updateRowByIndex(rowIndex, {
+        oc: body.oc || oc,
         proveedor: body.proveedor,
-        descripcion: body.descripcion,
+        linea_de_oc: body.linea_de_oc || linea,
         monto: body.monto,
         estado: body.estado,
-        fecha_entrega_estimada: body.fecha_entrega_estimada || '',
-        responsable: body.responsable,
-        notas: body.notas || '',
-        fecha_actualizacion: now,
-      };
-
-      await updateRow(id, ordenActualizada);
+        descripcion: body.descripcion,
+        fecha_vencimiento: body.fecha_vencimiento || '',
+        comprador: body.comprador || '',
+      });
 
       return NextResponse.json({
-        orden: ordenActualizada,
         message: 'Orden actualizada exitosamente',
       });
     }
 
     // Fallback mock
     return NextResponse.json({
-      orden: { id, ...body, fecha_actualizacion: now },
       source: 'mock',
       message: 'Orden actualizada (modo mock)',
     });
@@ -71,6 +74,7 @@ export async function PUT(request, { params }) {
 /**
  * DELETE /api/ordenes/[id]
  * Elimina una orden de compra.
+ * El [id] es un composite "OC-LINEA" (ej: "642323-1").
  */
 export async function DELETE(request, { params }) {
   try {
@@ -83,18 +87,29 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    const [oc, linea] = id.split('-');
+
     if (isGoogleConfigured()) {
-      const { deleteRow } = await import('@/lib/google-sheets');
-      await deleteRow(id);
+      const { findRowIndex, deleteRowByIndex } = await import('@/lib/google-sheets');
+
+      const rowIndex = await findRowIndex(oc, linea);
+      if (rowIndex === -1) {
+        return NextResponse.json(
+          { error: `Orden OC ${oc} Línea ${linea} no encontrada.` },
+          { status: 404 }
+        );
+      }
+
+      await deleteRowByIndex(rowIndex);
 
       return NextResponse.json({
-        message: `Orden ${id} eliminada exitosamente`,
+        message: `Orden OC ${oc} Línea ${linea} eliminada exitosamente`,
       });
     }
 
     // Fallback mock
     return NextResponse.json({
-      message: `Orden ${id} eliminada (modo mock)`,
+      message: `Orden eliminada (modo mock)`,
       source: 'mock',
     });
   } catch (error) {

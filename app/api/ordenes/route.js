@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MOCK_ORDENES, generateId, SHEET_COLUMNS } from '@/lib/constants';
+import { MOCK_ORDENES } from '@/lib/constants';
 
 // Determinar si Google Sheets está configurado
 const isGoogleConfigured = () => {
@@ -13,7 +13,7 @@ const isGoogleConfigured = () => {
 
 /**
  * GET /api/ordenes
- * Retorna todas las órdenes de compra.
+ * Retorna todas las órdenes de compra desde Google Sheets.
  */
 export async function GET(request) {
   try {
@@ -40,14 +40,14 @@ export async function GET(request) {
 
 /**
  * POST /api/ordenes
- * Crea una nueva orden de compra.
+ * Crea una nueva línea de orden de compra.
  */
 export async function POST(request) {
   try {
     const body = await request.json();
 
     // Validaciones básicas
-    const requiredFields = ['proveedor', 'descripcion', 'monto', 'estado', 'responsable'];
+    const requiredFields = ['oc', 'proveedor', 'monto', 'estado', 'descripcion'];
     const missing = requiredFields.filter((f) => !body[f]);
 
     if (missing.length > 0) {
@@ -57,25 +57,18 @@ export async function POST(request) {
       );
     }
 
-    const now = new Date().toISOString().split('T')[0];
-
     if (isGoogleConfigured()) {
-      const { appendRow, getLastId } = await import('@/lib/google-sheets');
-      
-      const lastId = await getLastId();
-      const newId = generateId(lastId);
+      const { appendRow } = await import('@/lib/google-sheets');
 
       const orden = {
-        id: newId,
-        fecha_creacion: now,
+        oc: body.oc,
         proveedor: body.proveedor,
-        descripcion: body.descripcion,
+        linea_de_oc: body.linea_de_oc || '',
         monto: body.monto,
         estado: body.estado,
-        fecha_entrega_estimada: body.fecha_entrega_estimada || '',
-        responsable: body.responsable,
-        notas: body.notas || '',
-        fecha_actualizacion: now,
+        descripcion: body.descripcion,
+        fecha_vencimiento: body.fecha_vencimiento || '',
+        comprador: body.comprador || '',
       };
 
       await appendRow(orden);
@@ -87,18 +80,15 @@ export async function POST(request) {
     }
 
     // Fallback: simular creación
-    const newId = generateId(MOCK_ORDENES[MOCK_ORDENES.length - 1]?.id);
     const orden = {
-      id: newId,
-      fecha_creacion: now,
+      oc: body.oc,
       proveedor: body.proveedor,
-      descripcion: body.descripcion,
+      linea_de_oc: body.linea_de_oc || '',
       monto: parseFloat(body.monto),
       estado: body.estado,
-      fecha_entrega_estimada: body.fecha_entrega_estimada || '',
-      responsable: body.responsable,
-      notas: body.notas || '',
-      fecha_actualizacion: now,
+      descripcion: body.descripcion,
+      fecha_vencimiento: body.fecha_vencimiento || '',
+      comprador: body.comprador || '',
     };
 
     return NextResponse.json(

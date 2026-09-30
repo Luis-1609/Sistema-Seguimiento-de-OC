@@ -8,18 +8,20 @@ import { ESTADOS_LIST } from '@/lib/constants';
 
 /**
  * Formulario para crear o editar una orden de compra.
+ * Adaptado a la estructura real del Google Sheet.
  */
 export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   const isEditing = !!orden;
 
   const [formData, setFormData] = useState({
+    oc: '',
     proveedor: '',
-    descripcion: '',
+    linea_de_oc: '',
     monto: '',
     estado: 'Pendiente',
-    fecha_entrega_estimada: '',
-    responsable: '',
-    notas: '',
+    descripcion: '',
+    fecha_vencimiento: '',
+    comprador: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -28,13 +30,14 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   useEffect(() => {
     if (orden) {
       setFormData({
+        oc: orden.oc || '',
         proveedor: orden.proveedor || '',
-        descripcion: orden.descripcion || '',
+        linea_de_oc: orden.linea_de_oc || '',
         monto: orden.monto || '',
         estado: orden.estado || 'Pendiente',
-        fecha_entrega_estimada: orden.fecha_entrega_estimada || '',
-        responsable: orden.responsable || '',
-        notas: orden.notas || '',
+        descripcion: orden.descripcion || '',
+        fecha_vencimiento: orden.fecha_vencimiento || '',
+        comprador: orden.comprador || '',
       });
     }
   }, [orden]);
@@ -42,7 +45,6 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error on change
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -51,6 +53,9 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   const validate = () => {
     const newErrors = {};
 
+    if (!formData.oc.toString().trim()) {
+      newErrors.oc = 'El N° de OC es requerido';
+    }
     if (!formData.proveedor.trim()) {
       newErrors.proveedor = 'El proveedor es requerido';
     }
@@ -62,9 +67,6 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
     }
     if (!formData.estado) {
       newErrors.estado = 'El estado es requerido';
-    }
-    if (!formData.responsable.trim()) {
-      newErrors.responsable = 'El responsable es requerido';
     }
 
     setErrors(newErrors);
@@ -78,10 +80,6 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
     onSubmit({
       ...formData,
       monto: parseFloat(formData.monto),
-      ...(isEditing && {
-        id: orden.id,
-        fecha_creacion: orden.fecha_creacion,
-      }),
     });
   };
 
@@ -90,10 +88,32 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
       <div className="glass-card">
         <div className="glass-card-header">
           <h2 className="glass-card-title">
-            {isEditing ? `Editar Orden ${orden.id}` : 'Nueva Orden de Compra'}
+            {isEditing ? `Editar OC ${orden.oc} — Línea ${orden.linea_de_oc}` : 'Nueva Orden de Compra'}
           </h2>
         </div>
         <div className="glass-card-body">
+          <div className="form-row">
+            <Input
+              label="N° de OC"
+              id="oc"
+              name="oc"
+              value={formData.oc}
+              onChange={handleChange}
+              placeholder="Ej: 642323"
+              required
+              error={errors.oc}
+            />
+            <Input
+              label="Línea de OC"
+              id="linea_de_oc"
+              name="linea_de_oc"
+              value={formData.linea_de_oc}
+              onChange={handleChange}
+              placeholder="Ej: 1"
+              hint="Número de línea dentro de la OC"
+            />
+          </div>
+
           <div className="form-row">
             <Input
               label="Proveedor"
@@ -101,19 +121,17 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
               name="proveedor"
               value={formData.proveedor}
               onChange={handleChange}
-              placeholder="Ej: Materiales del Norte S.A."
+              placeholder="Ej: Multimport"
               required
               error={errors.proveedor}
             />
             <Input
-              label="Responsable"
-              id="responsable"
-              name="responsable"
-              value={formData.responsable}
+              label="Comprador"
+              id="comprador"
+              name="comprador"
+              value={formData.comprador}
               onChange={handleChange}
-              placeholder="Ej: Carlos García"
-              required
-              error={errors.responsable}
+              placeholder="Ej: 20222227"
             />
           </div>
 
@@ -123,14 +141,14 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
             name="descripcion"
             value={formData.descripcion}
             onChange={handleChange}
-            placeholder="Descripción detallada del pedido"
+            placeholder="Descripción del artículo o servicio"
             required
             error={errors.descripcion}
           />
 
           <div className="form-row">
             <Input
-              label="Monto (MXN)"
+              label="Monto"
               id="monto"
               name="monto"
               type="number"
@@ -154,28 +172,14 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
             />
           </div>
 
-          <div className="form-row">
-            <Input
-              label="Fecha de Entrega Estimada"
-              id="fecha_entrega_estimada"
-              name="fecha_entrega_estimada"
-              type="date"
-              value={formData.fecha_entrega_estimada}
-              onChange={handleChange}
-            />
-            <div className="form-group">
-              <label htmlFor="notas" className="form-label">Notas</label>
-              <textarea
-                id="notas"
-                name="notas"
-                className="form-textarea"
-                value={formData.notas}
-                onChange={handleChange}
-                placeholder="Observaciones adicionales..."
-                rows={3}
-              />
-            </div>
-          </div>
+          <Input
+            label="Fecha de Vencimiento"
+            id="fecha_vencimiento"
+            name="fecha_vencimiento"
+            type="date"
+            value={formData.fecha_vencimiento}
+            onChange={handleChange}
+          />
         </div>
       </div>
 

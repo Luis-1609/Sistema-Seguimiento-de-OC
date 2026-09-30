@@ -24,18 +24,19 @@ export default function OrdenesPage() {
 
   const handleEditSubmit = async (data) => {
     try {
-      await actualizarOrden(data.id, data);
+      const compositeId = `${editingOrden.oc}-${editingOrden.linea_de_oc}`;
+      await actualizarOrden(compositeId, data);
       setEditingOrden(null);
-      toast?.success('Orden actualizada', `La orden ${data.id} se actualizó correctamente.`);
+      toast?.success('Orden actualizada', `OC ${data.oc} línea ${data.linea_de_oc} actualizada.`);
     } catch (err) {
       toast?.error('Error', err.message);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (compositeId) => {
     try {
-      await eliminarOrden(id);
-      toast?.success('Orden eliminada', `La orden ${id} fue eliminada.`);
+      await eliminarOrden(compositeId);
+      toast?.success('Orden eliminada', `Registro eliminado correctamente.`);
     } catch (err) {
       toast?.error('Error', err.message);
     }
@@ -84,7 +85,7 @@ export default function OrdenesPage() {
       <Modal
         isOpen={!!editingOrden}
         onClose={() => setEditingOrden(null)}
-        title={`Editar Orden ${editingOrden?.id || ''}`}
+        title={`Editar OC ${editingOrden?.oc || ''} — Línea ${editingOrden?.linea_de_oc || ''}`}
         size="lg"
       >
         {editingOrden && (

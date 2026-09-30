@@ -31,7 +31,6 @@ export function useOrdenes() {
       setOrdenes(data.ordenes || []);
     } catch (err) {
       console.warn('API no disponible, usando datos mock:', err.message);
-      // Fallback a mock data en desarrollo
       setOrdenes(MOCK_ORDENES);
     } finally {
       setLoading(false);
@@ -56,31 +55,25 @@ export function useOrdenes() {
         throw new Error(data.error || 'Error al crear la orden');
       }
 
-      // Refresh the list
       await fetchOrdenes();
       return data;
     } catch (err) {
-      // Fallback: add locally with mock
-      const newOrden = {
-        ...ordenData,
-        id: `OC-${String(ordenes.length + 1).padStart(3, '0')}`,
-        fecha_creacion: new Date().toISOString().split('T')[0],
-        fecha_actualizacion: new Date().toISOString().split('T')[0],
-      };
+      // Fallback: add locally
+      const newOrden = { ...ordenData };
       setOrdenes((prev) => [...prev, newOrden]);
       return { orden: newOrden, mock: true };
     } finally {
       setSaving(false);
     }
-  }, [fetchOrdenes, ordenes.length]);
+  }, [fetchOrdenes]);
 
-  // Update an existing order
-  const actualizarOrden = useCallback(async (id, ordenData) => {
+  // Update an existing order (using composite ID: "OC-LINEA")
+  const actualizarOrden = useCallback(async (compositeId, ordenData) => {
     setSaving(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/ordenes/${id}`, {
+      const res = await fetch(`/api/ordenes/${compositeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ordenData),
@@ -96,10 +89,11 @@ export function useOrdenes() {
       return data;
     } catch (err) {
       // Fallback: update locally
+      const [oc, linea] = compositeId.split('-');
       setOrdenes((prev) =>
         prev.map((o) =>
-          o.id === id
-            ? { ...o, ...ordenData, fecha_actualizacion: new Date().toISOString().split('T')[0] }
+          o.oc === oc && o.linea_de_oc === linea
+            ? { ...o, ...ordenData }
             : o
         )
       );
@@ -109,13 +103,13 @@ export function useOrdenes() {
     }
   }, [fetchOrdenes]);
 
-  // Delete an order
-  const eliminarOrden = useCallback(async (id) => {
+  // Delete an order (using composite ID: "OC-LINEA")
+  const eliminarOrden = useCallback(async (compositeId) => {
     setSaving(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/ordenes/${id}`, {
+      const res = await fetch(`/api/ordenes/${compositeId}`, {
         method: 'DELETE',
       });
 
@@ -129,14 +123,14 @@ export function useOrdenes() {
       return data;
     } catch (err) {
       // Fallback: remove locally
-      setOrdenes((prev) => prev.filter((o) => o.id !== id));
+      const [oc, linea] = compositeId.split('-');
+      setOrdenes((prev) => prev.filter((o) => !(o.oc === oc && o.linea_de_oc === linea)));
       return { mock: true };
     } finally {
       setSaving(false);
     }
   }, [fetchOrdenes]);
 
-  // Load orders on mount
   useEffect(() => {
     fetchOrdenes();
   }, [fetchOrdenes]);

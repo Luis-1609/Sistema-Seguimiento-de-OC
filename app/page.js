@@ -19,22 +19,19 @@ export default function DashboardPage() {
     if (!ordenes.length) return null;
 
     const total = ordenes.length;
-    const pendientes = ordenes.filter((o) => o.estado === 'Pendiente').length;
-    const enProceso = ordenes.filter((o) => o.estado === 'En Proceso').length;
-    const entregadas = ordenes.filter((o) => o.estado === 'Entregada').length;
+    const estadoCounts = {};
+    ordenes.forEach((o) => {
+      estadoCounts[o.estado] = (estadoCounts[o.estado] || 0) + 1;
+    });
     const montoTotal = ordenes.reduce((sum, o) => sum + parseFloat(o.monto || 0), 0);
-    const montoActivo = ordenes
-      .filter((o) => !['Cancelada', 'Entregada'].includes(o.estado))
-      .reduce((sum, o) => sum + parseFloat(o.monto || 0), 0);
+    const ocsUnicas = new Set(ordenes.map((o) => o.oc)).size;
 
-    return { total, pendientes, enProceso, entregadas, montoTotal, montoActivo };
+    return { total, estadoCounts, montoTotal, ocsUnicas };
   }, [ordenes]);
 
-  // Últimas 5 órdenes
+  // Últimos 5 registros
   const recentOrdenes = useMemo(() => {
-    return [...ordenes]
-      .sort((a, b) => new Date(b.fecha_actualizacion) - new Date(a.fecha_actualizacion))
-      .slice(0, 5);
+    return ordenes.slice(-5).reverse();
   }, [ordenes]);
 
   if (loading) {
@@ -65,30 +62,30 @@ export default function DashboardPage() {
       {kpis && (
         <div className="kpi-grid">
           <KpiCard
-            label="Total Órdenes"
-            value={kpis.total}
-            subtitle="Registradas en el sistema"
+            label="OCs Únicas"
+            value={kpis.ocsUnicas}
+            subtitle={`${kpis.total} líneas totales`}
             color="accent"
             icon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
           />
           <KpiCard
-            label="Pendientes"
-            value={kpis.pendientes}
-            subtitle="Esperando aprobación"
+            label="Líneas Totales"
+            value={kpis.total}
+            subtitle="Registradas en el sistema"
+            color="info"
+            icon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
+          />
+          <KpiCard
+            label="Estado Principal"
+            value={Object.entries(kpis.estadoCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—'}
+            subtitle={`${Object.entries(kpis.estadoCounts).sort((a, b) => b[1] - a[1])[0]?.[1] || 0} registros`}
             color="warning"
             icon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
           />
           <KpiCard
-            label="En Proceso"
-            value={kpis.enProceso}
-            subtitle="En curso de entrega"
-            color="info"
-            icon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
-          />
-          <KpiCard
-            label="Monto Activo"
-            value={formatMonto(kpis.montoActivo)}
-            subtitle={`Total: ${formatMonto(kpis.montoTotal)}`}
+            label="Monto Total"
+            value={formatMonto(kpis.montoTotal)}
+            subtitle="Suma de todas las líneas"
             color="success"
             icon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
           />
@@ -98,7 +95,7 @@ export default function DashboardPage() {
       {/* Recent Orders */}
       <div className="glass-card">
         <div className="glass-card-header">
-          <h2 className="glass-card-title">Órdenes Recientes</h2>
+          <h2 className="glass-card-title">Registros Recientes</h2>
           <Link href="/ordenes">
             <Button variant="ghost" size="sm">
               Ver todas →
@@ -109,36 +106,38 @@ export default function DashboardPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>OC</th>
+                <th>Línea</th>
                 <th>Proveedor</th>
+                <th>Descripción</th>
                 <th>Monto</th>
                 <th>Estado</th>
-                <th>Actualizado</th>
-                <th>Responsable</th>
+                <th>Comprador</th>
               </tr>
             </thead>
             <tbody>
               {recentOrdenes.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="table-empty">
+                  <td colSpan="7" className="table-empty">
                     <div className="table-empty-icon">📊</div>
                     <div className="table-empty-text">No hay órdenes aún</div>
                     <div className="table-empty-sub">
-                      <Link href="/ordenes/nueva" style={{ color: 'var(--color-accent)' }}>
+                      <Link href="/ordenes/nueva" style={{ color: 'var(--color-tertiary)' }}>
                         Crea tu primera orden →
                       </Link>
                     </div>
                   </td>
                 </tr>
               ) : (
-                recentOrdenes.map((orden) => (
-                  <tr key={orden.id}>
-                    <td>{orden.id}</td>
+                recentOrdenes.map((orden, index) => (
+                  <tr key={`${orden.oc}-${orden.linea_de_oc}-${index}`}>
+                    <td>{orden.oc}</td>
+                    <td style={{ textAlign: 'center' }}>{orden.linea_de_oc}</td>
                     <td>{orden.proveedor}</td>
+                    <td>{orden.descripcion}</td>
                     <td className="table-cell-monto">{formatMonto(orden.monto)}</td>
                     <td><StatusBadge estado={orden.estado} /></td>
-                    <td>{formatFecha(orden.fecha_actualizacion)}</td>
-                    <td>{orden.responsable}</td>
+                    <td>{orden.comprador}</td>
                   </tr>
                 ))
               )}

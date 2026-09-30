@@ -7,12 +7,13 @@ import { formatMonto, formatFecha } from '@/lib/constants';
 
 /**
  * Tabla de órdenes de compra con acciones inline.
+ * Adaptada a la estructura real del Google Sheet:
+ * OC | Proveedor | Línea de OC | Monto | Estado | Descripcion | Fecha vencimiento | Comprador
  */
 export default function OrdenesTable({
   ordenes,
   onEdit,
   onDelete,
-  onStatusChange,
   saving,
 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -24,14 +25,15 @@ export default function OrdenesTable({
     const matchEstado = !filterEstado || o.estado === filterEstado;
     const matchSearch =
       !searchTerm ||
-      o.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.oc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.proveedor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.responsable?.toLowerCase().includes(searchTerm.toLowerCase());
+      o.comprador?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchEstado && matchSearch;
   });
 
-  const estados = ['Pendiente', 'Aprobada', 'En Proceso', 'Entregada', 'Cancelada'];
+  // Obtener estados únicos de los datos reales
+  const estadosUnicos = [...new Set(ordenes.map((o) => o.estado).filter(Boolean))];
 
   return (
     <>
@@ -43,7 +45,7 @@ export default function OrdenesTable({
         >
           Todas ({ordenes.length})
         </button>
-        {estados.map((estado) => {
+        {estadosUnicos.map((estado) => {
           const count = ordenes.filter((o) => o.estado === estado).length;
           return (
             <button
@@ -59,7 +61,7 @@ export default function OrdenesTable({
           <input
             type="text"
             className="form-input"
-            placeholder="Buscar por ID, proveedor, descripción..."
+            placeholder="Buscar por OC, proveedor, descripción..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -72,20 +74,21 @@ export default function OrdenesTable({
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>OC</th>
+                <th>Línea</th>
                 <th>Proveedor</th>
                 <th>Descripción</th>
                 <th>Monto</th>
                 <th>Estado</th>
-                <th>F. Entrega Est.</th>
-                <th>Responsable</th>
+                <th>F. Vencimiento</th>
+                <th>Comprador</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrdenes.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="table-empty">
+                  <td colSpan="9" className="table-empty">
                     <div className="table-empty-icon">📋</div>
                     <div className="table-empty-text">
                       {searchTerm || filterEstado
@@ -100,9 +103,10 @@ export default function OrdenesTable({
                   </td>
                 </tr>
               ) : (
-                filteredOrdenes.map((orden) => (
-                  <tr key={orden.id}>
-                    <td>{orden.id}</td>
+                filteredOrdenes.map((orden, index) => (
+                  <tr key={`${orden.oc}-${orden.linea_de_oc}-${index}`}>
+                    <td>{orden.oc}</td>
+                    <td style={{ textAlign: 'center' }}>{orden.linea_de_oc}</td>
                     <td>{orden.proveedor}</td>
                     <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {orden.descripcion}
@@ -111,8 +115,8 @@ export default function OrdenesTable({
                     <td>
                       <StatusBadge estado={orden.estado} />
                     </td>
-                    <td>{formatFecha(orden.fecha_entrega_estimada)}</td>
-                    <td>{orden.responsable}</td>
+                    <td>{formatFecha(orden.fecha_vencimiento)}</td>
+                    <td>{orden.comprador}</td>
                     <td>
                       <div className="table-actions">
                         {/* Editar */}
@@ -120,7 +124,7 @@ export default function OrdenesTable({
                           className="btn btn-ghost btn-icon btn-sm"
                           onClick={() => onEdit && onEdit(orden)}
                           title="Editar orden"
-                          aria-label={`Editar orden ${orden.id}`}
+                          aria-label={`Editar OC ${orden.oc} línea ${orden.linea_de_oc}`}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -132,7 +136,7 @@ export default function OrdenesTable({
                           className="btn btn-ghost btn-icon btn-sm"
                           onClick={() => setDeleteTarget(orden)}
                           title="Eliminar orden"
-                          aria-label={`Eliminar orden ${orden.id}`}
+                          aria-label={`Eliminar OC ${orden.oc} línea ${orden.linea_de_oc}`}
                           style={{ color: 'var(--color-error)' }}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,7 +167,7 @@ export default function OrdenesTable({
           color: 'var(--color-text-tertiary)',
         }}>
           <span>
-            Mostrando {filteredOrdenes.length} de {ordenes.length} órdenes
+            Mostrando {filteredOrdenes.length} de {ordenes.length} registros
           </span>
           <span>
             Total filtrado: {formatMonto(filteredOrdenes.reduce((sum, o) => sum + parseFloat(o.monto || 0), 0))}
@@ -176,8 +180,8 @@ export default function OrdenesTable({
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         orden={deleteTarget}
-        onConfirm={(id) => {
-          onDelete && onDelete(id);
+        onConfirm={(compositeId) => {
+          onDelete && onDelete(compositeId);
           setDeleteTarget(null);
         }}
         loading={saving}
