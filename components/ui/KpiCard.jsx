@@ -5,11 +5,11 @@
  */
 export default function KpiCard({ label, value, subtitle, icon, color = 'accent' }) {
   const colorMap = {
-    accent: { color: 'var(--color-accent)', bg: 'var(--color-accent-glow)' },
+    accent: { color: 'var(--color-secondary)', bg: 'var(--color-info-bg)' },
     success: { color: 'var(--color-success)', bg: 'var(--color-success-bg)' },
     warning: { color: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
     error: { color: 'var(--color-error)', bg: 'var(--color-error-bg)' },
-    info: { color: 'var(--color-info)', bg: 'var(--color-info-bg)' },
+    info: { color: 'var(--color-tertiary)', bg: 'var(--color-info-bg)' },
   };
 
   const colors = colorMap[color] || colorMap.accent;
