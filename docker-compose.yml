@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seguimiento-oc
+    ports:
+      - "3000:3000"
+    volumes:
+      # Montar código fuente para hot-reload
+      - .:/app
+      # Volumen anónimo para node_modules (evita conflicto con el host Windows)
+      - /app/node_modules
+      # Volumen anónimo para caché de Next.js
+      - /app/.next
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    restart: unless-stopped
