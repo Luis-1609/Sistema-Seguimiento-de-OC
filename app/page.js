@@ -47,6 +47,7 @@ export default function DashboardPage() {
           <p>Vista general del sistema de órdenes de compra</p>
         </div>
         <div className="page-header-actions">
+          {/* 
           <Link href="/ordenes/nueva">
             <Button
               variant="primary"
@@ -55,6 +56,7 @@ export default function DashboardPage() {
               Nueva Orden
             </Button>
           </Link>
+          */}
         </div>
       </div>
 

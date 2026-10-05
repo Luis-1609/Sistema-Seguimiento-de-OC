@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import StatusBadge from './StatusBadge';
 import DeleteModal from './DeleteModal';
 import { formatMonto, formatFecha } from '@/lib/constants';
+import { useUser, getFirstName } from '@/context/UserContext';
 
 /**
  * Tabla de órdenes de compra con acciones inline.
  * Adaptada a la estructura real del Google Sheet:
  * OC | Proveedor | Línea de OC | Monto | Estado | Descripcion | Fecha vencimiento | Comprador
+ * 
+ * Incluye filtro por comprador: por defecto muestra "Mis OC",
+ * pero permite ver las de cualquier comprador o todas.
  */
 export default function OrdenesTable({
   ordenes,
@@ -16,37 +20,103 @@ export default function OrdenesTable({
   onDelete,
   saving,
 }) {
+  const { activeUser, usuarios } = useUser();
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [filterEstado, setFilterEstado] = useState('');
+  const [filterComprador, setFilterComprador] = useState('mine');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Obtener compradores únicos presentes en los datos
+  const compradoresUnicos = useMemo(() => {
+    const codes = [...new Set(ordenes.map((o) => o.comprador).filter(Boolean))];
+    return codes.map((code) => {
+      const user = usuarios.find((u) => u.codigo_comprador === code);
+      return {
+        code,
+        name: user ? getFirstName(user.nombre_comprador) : code,
+      };
+    });
+  }, [ordenes, usuarios]);
+
   // Filtrado
-  const filteredOrdenes = ordenes.filter((o) => {
-    const matchEstado = !filterEstado || o.estado === filterEstado;
-    const matchSearch =
-      !searchTerm ||
-      o.oc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.proveedor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.comprador?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchEstado && matchSearch;
-  });
+  const filteredOrdenes = useMemo(() => {
+    return ordenes.filter((o) => {
+      // Filtro por comprador
+      let matchComprador = true;
+      if (filterComprador === 'mine') {
+        matchComprador = o.comprador === activeUser?.codigo_comprador;
+      } else if (filterComprador && filterComprador !== 'all') {
+        matchComprador = o.comprador === filterComprador;
+      }
+
+      const matchEstado = !filterEstado || o.estado === filterEstado;
+      const matchSearch =
+        !searchTerm ||
+        o.oc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.proveedor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.comprador?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchComprador && matchEstado && matchSearch;
+    });
+  }, [ordenes, filterComprador, filterEstado, searchTerm, activeUser]);
 
   // Obtener estados únicos de los datos reales
   const estadosUnicos = [...new Set(ordenes.map((o) => o.estado).filter(Boolean))];
 
+  // Contar OC del usuario actual
+  const myCount = ordenes.filter(
+    (o) => o.comprador === activeUser?.codigo_comprador
+  ).length;
+
   return (
     <>
-      {/* Filter Bar */}
+      {/* Buyer Filter Bar */}
+      <div className="filter-bar buyer-filter-bar">
+        <span className="filter-bar-label">Comprador:</span>
+        <button
+          className={`filter-chip ${filterComprador === 'mine' ? 'active' : ''}`}
+          onClick={() => setFilterComprador('mine')}
+        >
+          <span className="filter-chip-dot" />
+          Mis OC ({myCount})
+        </button>
+        <button
+          className={`filter-chip ${filterComprador === 'all' ? 'active' : ''}`}
+          onClick={() => setFilterComprador('all')}
+        >
+          Todas ({ordenes.length})
+        </button>
+        {compradoresUnicos
+          .filter((c) => c.code !== activeUser?.codigo_comprador)
+          .map((comprador) => {
+            const count = ordenes.filter((o) => o.comprador === comprador.code).length;
+            return (
+              <button
+                key={comprador.code}
+                className={`filter-chip ${filterComprador === comprador.code ? 'active' : ''}`}
+                onClick={() =>
+                  setFilterComprador(
+                    filterComprador === comprador.code ? 'mine' : comprador.code
+                  )
+                }
+              >
+                {comprador.name} ({count})
+              </button>
+            );
+          })}
+      </div>
+
+      {/* Status Filter + Search Bar */}
       <div className="filter-bar">
         <button
           className={`filter-chip ${!filterEstado ? 'active' : ''}`}
           onClick={() => setFilterEstado('')}
         >
-          Todas ({ordenes.length})
+          Todos los estados
         </button>
         {estadosUnicos.map((estado) => {
-          const count = ordenes.filter((o) => o.estado === estado).length;
+          const count = filteredOrdenes.filter((o) => o.estado === estado).length;
           return (
             <button
               key={estado}
@@ -91,65 +161,83 @@ export default function OrdenesTable({
                   <td colSpan="9" className="table-empty">
                     <div className="table-empty-icon">📋</div>
                     <div className="table-empty-text">
-                      {searchTerm || filterEstado
+                      {searchTerm || filterEstado || filterComprador !== 'all'
                         ? 'No se encontraron órdenes con esos filtros'
                         : 'No hay órdenes de compra registradas'}
                     </div>
                     <div className="table-empty-sub">
-                      {searchTerm || filterEstado
-                        ? 'Intenta con otros criterios de búsqueda'
-                        : 'Crea una nueva orden para comenzar'}
+                      {filterComprador === 'mine'
+                        ? 'No tienes OC asignadas. Prueba con "Todas"'
+                        : searchTerm || filterEstado
+                          ? 'Intenta con otros criterios de búsqueda'
+                          : 'Crea una nueva orden para comenzar'}
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredOrdenes.map((orden, index) => (
-                  <tr key={`${orden.oc}-${orden.linea_de_oc}-${index}`}>
-                    <td>{orden.oc}</td>
-                    <td style={{ textAlign: 'center' }}>{orden.linea_de_oc}</td>
-                    <td>{orden.proveedor}</td>
-                    <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {orden.descripcion}
-                    </td>
-                    <td className="table-cell-monto">{formatMonto(orden.monto)}</td>
-                    <td>
-                      <StatusBadge estado={orden.estado} />
-                    </td>
-                    <td>{formatFecha(orden.fecha_vencimiento)}</td>
-                    <td>{orden.comprador}</td>
-                    <td>
-                      <div className="table-actions">
-                        {/* Editar */}
-                        <button
-                          className="btn btn-ghost btn-icon btn-sm"
-                          onClick={() => onEdit && onEdit(orden)}
-                          title="Editar orden"
-                          aria-label={`Editar OC ${orden.oc} línea ${orden.linea_de_oc}`}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        {/* Eliminar */}
-                        <button
-                          className="btn btn-ghost btn-icon btn-sm"
-                          onClick={() => setDeleteTarget(orden)}
-                          title="Eliminar orden"
-                          aria-label={`Eliminar OC ${orden.oc} línea ${orden.linea_de_oc}`}
-                          style={{ color: 'var(--color-error)' }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredOrdenes.map((orden, index) => {
+                  // Resolve comprador name
+                  const compradorUser = usuarios.find(
+                    (u) => u.codigo_comprador === orden.comprador
+                  );
+                  const compradorDisplay = compradorUser
+                    ? getFirstName(compradorUser.nombre_comprador)
+                    : orden.comprador;
+
+                  return (
+                    <tr key={`${orden.oc}-${orden.linea_de_oc}-${index}`}>
+                      <td>{orden.oc}</td>
+                      <td style={{ textAlign: 'center' }}>{orden.linea_de_oc}</td>
+                      <td>{orden.proveedor}</td>
+                      <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {orden.descripcion}
+                      </td>
+                      <td className="table-cell-monto">{formatMonto(orden.monto)}</td>
+                      <td>
+                        <StatusBadge estado={orden.estado} />
+                      </td>
+                      <td>{formatFecha(orden.fecha_vencimiento)}</td>
+                      <td>
+                        <span className="comprador-badge" title={orden.comprador}>
+                          {compradorDisplay}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="table-actions" style={{ justifyContent: 'center' }}>
+                          {/* Editar */}
+                          <button
+                            className="btn btn-ghost btn-icon btn-sm"
+                            onClick={() => onEdit && onEdit(orden)}
+                            title="Editar orden"
+                            aria-label={`Editar OC ${orden.oc} línea ${orden.linea_de_oc}`}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          {/* Eliminar */}
+                          {/* 
+                          <button
+                            className="btn btn-ghost btn-icon btn-sm"
+                            onClick={() => setDeleteTarget(orden)}
+                            title="Eliminar orden"
+                            aria-label={`Eliminar OC ${orden.oc} línea ${orden.linea_de_oc}`}
+                            style={{ color: 'var(--color-error)' }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                          </button>
+                          */}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -176,6 +264,7 @@ export default function OrdenesTable({
       )}
 
       {/* Delete Modal */}
+      {/* 
       <DeleteModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -186,6 +275,7 @@ export default function OrdenesTable({
         }}
         loading={saving}
       />
+      */}
     </>
   );
 }

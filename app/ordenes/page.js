@@ -32,7 +32,7 @@ export default function OrdenesPage() {
       toast?.error('Error', err.message);
     }
   };
-
+  /*
   const handleDelete = async (compositeId) => {
     try {
       await eliminarOrden(compositeId);
@@ -41,7 +41,7 @@ export default function OrdenesPage() {
       toast?.error('Error', err.message);
     }
   };
-
+  */
   if (loading) {
     return <Spinner size="lg" text="Cargando órdenes de compra..." />;
   }
@@ -62,6 +62,7 @@ export default function OrdenesPage() {
           >
             Actualizar
           </Button>
+          {/* 
           <Link href="/ordenes/nueva">
             <Button
               variant="primary"
@@ -70,6 +71,7 @@ export default function OrdenesPage() {
               Nueva Orden
             </Button>
           </Link>
+          */}
         </div>
       </div>
 
@@ -77,7 +79,7 @@ export default function OrdenesPage() {
       <OrdenesTable
         ordenes={ordenes}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        //onDelete={handleDelete}
         saving={saving}
       />
 
