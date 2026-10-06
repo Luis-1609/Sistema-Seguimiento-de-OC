@@ -16,7 +16,7 @@ const ESTADOS_ENTREGA = [
   'Por Entregar',
   'Entregado',
   'Entrega Parcial',
-  'Rechazado',
+  'Anulado',
 ];
 
 const LUGARES_DESTINO = [
