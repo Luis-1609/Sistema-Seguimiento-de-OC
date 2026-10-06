@@ -24,10 +24,10 @@ export default function OrdenesPage() {
 
   const handleEditSubmit = async (data) => {
     try {
-      const compositeId = `${editingOrden.oc}-${editingOrden.linea_de_oc}`;
+      const compositeId = `${editingOrden.oc}-${editingOrden.id || editingOrden.linea_de_oc || ''}`;
       await actualizarOrden(compositeId, data);
       setEditingOrden(null);
-      toast?.success('Orden actualizada', `OC ${data.oc} línea ${data.linea_de_oc} actualizada.`);
+      toast?.success('Orden actualizada', `OC ${data.oc} ID ${data.id || data.num_id || ''} actualizada.`);
     } catch (err) {
       toast?.error('Error', err.message);
     }
@@ -87,8 +87,9 @@ export default function OrdenesPage() {
       <Modal
         isOpen={!!editingOrden}
         onClose={() => setEditingOrden(null)}
-        title={`Editar OC ${editingOrden?.oc || ''} — Línea ${editingOrden?.linea_de_oc || ''}`}
-        size="lg"
+        //— Línea ${editingOrden?.linea_de_oc || ''}
+        title={`Editar OC ${editingOrden?.oc || ''}`}
+        size="xl"
       >
         {editingOrden && (
           <OrdenForm

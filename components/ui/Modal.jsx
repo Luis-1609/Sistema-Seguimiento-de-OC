@@ -36,7 +36,7 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  const sizeClass = size === 'lg' ? 'modal-lg' : '';
+  const sizeClass = size === 'xl' ? 'modal-xl' : size === 'lg' ? 'modal-lg' : '';
 
   return (
     <div className="modal-backdrop" onClick={onClose}>

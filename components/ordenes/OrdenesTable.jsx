@@ -144,8 +144,8 @@ export default function OrdenesTable({
           <table className="data-table">
             <thead>
               <tr>
-                <th>OC</th>
-                <th>Línea</th>
+                <th style={{ textAlign: 'center' }}>OC</th>
+                <th style={{ textAlign: 'center' }}>ID</th>
                 <th>Proveedor</th>
                 <th>Descripción</th>
                 <th>Monto</th>
@@ -185,9 +185,14 @@ export default function OrdenesTable({
                     : orden.comprador;
 
                   return (
-                    <tr key={`${orden.oc}-${orden.linea_de_oc}-${index}`}>
+                    // La idea es que, el numero de ID debe ser la key junto con la oc en lugar de la linea de oc
+                    // ESTE CAMBIO SE APLICARÁ CUANDO RODRIGO TENGA LA TABLA YA HECHA (con ID)
+                    //-${index}
+                    <tr key={`${orden.oc}-${orden.id}`}>
                       <td>{orden.oc}</td>
-                      <td style={{ textAlign: 'center' }}>{orden.linea_de_oc}</td>
+
+                      <td style={{ textAlign: 'center' }}>{orden.id}</td>
+
                       <td>{orden.proveedor}</td>
                       <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {orden.descripcion}
@@ -209,7 +214,7 @@ export default function OrdenesTable({
                             className="btn btn-ghost btn-icon btn-sm"
                             onClick={() => onEdit && onEdit(orden)}
                             title="Editar orden"
-                            aria-label={`Editar OC ${orden.oc} línea ${orden.linea_de_oc}`}
+                            aria-label={`Editar OC ${orden.oc} ID ${orden.id}`}
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

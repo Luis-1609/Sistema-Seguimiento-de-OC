@@ -92,7 +92,7 @@ export function useOrdenes() {
       const [oc, linea] = compositeId.split('-');
       setOrdenes((prev) =>
         prev.map((o) =>
-          o.oc === oc && o.linea_de_oc === linea
+          o.oc === oc && (o.id === linea || o.linea_de_oc === linea)
             ? { ...o, ...ordenData }
             : o
         )
@@ -124,7 +124,7 @@ export function useOrdenes() {
     } catch (err) {
       // Fallback: remove locally
       const [oc, linea] = compositeId.split('-');
-      setOrdenes((prev) => prev.filter((o) => !(o.oc === oc && o.linea_de_oc === linea)));
+      setOrdenes((prev) => prev.filter((o) => !(o.oc === oc && (o.id === linea || o.linea_de_oc === linea))));
       return { mock: true };
     } finally {
       setSaving(false);

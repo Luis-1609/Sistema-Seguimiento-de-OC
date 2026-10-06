@@ -63,7 +63,7 @@ export async function POST(request) {
       const orden = {
         oc: body.oc,
         proveedor: body.proveedor,
-        linea_de_oc: body.linea_de_oc || '',
+        id: body.id || '',
         monto: body.monto,
         estado: body.estado,
         descripcion: body.descripcion,
@@ -83,7 +83,7 @@ export async function POST(request) {
     const orden = {
       oc: body.oc,
       proveedor: body.proveedor,
-      linea_de_oc: body.linea_de_oc || '',
+      id: body.id || '',
       monto: parseFloat(body.monto),
       estado: body.estado,
       descripcion: body.descripcion,

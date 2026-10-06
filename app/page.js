@@ -109,7 +109,7 @@ export default function DashboardPage() {
             <thead>
               <tr>
                 <th>OC</th>
-                <th>Línea</th>
+                <th style={{ textAlign: 'center' }}>ID</th>
                 <th>Proveedor</th>
                 <th>Descripción</th>
                 <th>Monto</th>
@@ -132,9 +132,9 @@ export default function DashboardPage() {
                 </tr>
               ) : (
                 recentOrdenes.map((orden, index) => (
-                  <tr key={`${orden.oc}-${orden.linea_de_oc}-${index}`}>
+                  <tr key={`${orden.oc}-${orden.id || orden.linea_de_oc}-${index}`}>
                     <td>{orden.oc}</td>
-                    <td style={{ textAlign: 'center' }}>{orden.linea_de_oc}</td>
+                    <td style={{ textAlign: 'center' }}>{orden.id || orden.linea_de_oc}</td>
                     <td>{orden.proveedor}</td>
                     <td>{orden.descripcion}</td>
                     <td className="table-cell-monto">{formatMonto(orden.monto)}</td>

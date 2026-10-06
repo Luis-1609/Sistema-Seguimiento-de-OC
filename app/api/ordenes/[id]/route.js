@@ -44,7 +44,7 @@ export async function PUT(request, { params }) {
       await updateRowByIndex(rowIndex, {
         oc: body.oc || oc,
         proveedor: body.proveedor,
-        linea_de_oc: body.linea_de_oc || linea,
+        id: body.id || linea,
         monto: body.monto,
         estado: body.estado,
         descripcion: body.descripcion,

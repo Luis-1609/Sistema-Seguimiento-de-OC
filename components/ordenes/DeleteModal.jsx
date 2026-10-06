@@ -9,7 +9,7 @@ import Modal from '@/components/ui/Modal';
 export default function DeleteModal({ isOpen, onClose, orden, onConfirm, loading }) {
   if (!orden) return null;
 
-  const compositeId = `${orden.oc}-${orden.linea_de_oc}`;
+  const compositeId = `${orden.oc}-${orden.id || ''}`;
 
   return (
     <Modal
@@ -32,7 +32,7 @@ export default function DeleteModal({ isOpen, onClose, orden, onConfirm, loading
           ⚠️
         </div>
         <p style={{ color: 'var(--color-text-primary)', fontSize: 'var(--font-size-md)', marginBottom: 'var(--space-2)' }}>
-          ¿Estás seguro de eliminar la OC <strong>{orden.oc}</strong> Línea <strong>{orden.linea_de_oc}</strong>?
+          ¿Estás seguro de eliminar la OC <strong>{orden.oc}</strong> ID <strong>{orden.id || orden.num_id || ''}</strong>?
         </p>
         <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)' }}>
           {orden.proveedor} — {orden.descripcion}

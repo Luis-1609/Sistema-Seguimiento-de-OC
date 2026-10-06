@@ -4,21 +4,46 @@ import { useState, useEffect } from 'react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
-import { ESTADOS_LIST } from '@/lib/constants';
 
 /**
- * Formulario para crear o editar una orden de compra.
- * Adaptado a la estructura real del Google Sheet.
+ * Formulario para editar una orden de compra.
+ * Campos de solo lectura: OC, Num ID, Proveedor, Fecha de Notificación.
+ * Campos editables: Fecha de Seguimiento, Estado de Entrega, Ticket Relacionado,
+ *                   Lugar Destino, Comentarios, Servicio de Entrega.
  */
+
+const ESTADOS_ENTREGA = [
+  'Por Entregar',
+  'Entregado',
+  'Entrega Parcial',
+  'Rechazado',
+];
+
+const LUGARES_DESTINO = [
+  'Almacén de DTI',
+  'Local Externo',
+  'Unidad en el Campus',
+  'Servicios',
+];
+
 export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   const isEditing = !!orden;
 
   const [formData, setFormData] = useState({
     oc: '',
+    num_id: '',
     proveedor: '',
-    linea_de_oc: '',
+    fecha_notificacion: '',
+    fecha_seguimiento: '',
+    estado: '',
+    ticket_relacionado: '',
+    tiene_ticket: false,
+    lugar_destino: '',
+    comentarios: '',
+    servicio_entrega: '',
+    // Campos originales que se mantienen para el submit
+    id: '',
     monto: '',
-    estado: 'Pendiente',
     descripcion: '',
     fecha_vencimiento: '',
     comprador: '',
@@ -31,10 +56,19 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
     if (orden) {
       setFormData({
         oc: orden.oc || '',
+        num_id: orden.id || orden.num_id || '',
         proveedor: orden.proveedor || '',
-        linea_de_oc: orden.linea_de_oc || '',
+        fecha_notificacion: orden.fecha_notificacion || orden.fecha_vencimiento || '',
+        fecha_seguimiento: orden.fecha_seguimiento || '',
+        estado: orden.estado || '',
+        ticket_relacionado: orden.ticket_relacionado || '',
+        tiene_ticket: !!(orden.ticket_relacionado),
+        lugar_destino: orden.lugar_destino || '',
+        comentarios: orden.comentarios || '',
+        servicio_entrega: orden.servicio_entrega || '',
+        // Campos originales
+        id: orden.id || '',
         monto: orden.monto || '',
-        estado: orden.estado || 'Pendiente',
         descripcion: orden.descripcion || '',
         fecha_vencimiento: orden.fecha_vencimiento || '',
         comprador: orden.comprador || '',
@@ -43,8 +77,11 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   }, [orden]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -53,20 +90,11 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.oc.toString().trim()) {
-      newErrors.oc = 'El N° de OC es requerido';
-    }
-    if (!formData.proveedor.trim()) {
-      newErrors.proveedor = 'El proveedor es requerido';
-    }
-    if (!formData.descripcion.trim()) {
-      newErrors.descripcion = 'La descripción es requerida';
-    }
-    if (!formData.monto || parseFloat(formData.monto) <= 0) {
-      newErrors.monto = 'El monto debe ser mayor a 0';
-    }
     if (!formData.estado) {
-      newErrors.estado = 'El estado es requerido';
+      newErrors.estado = 'El estado de entrega es requerido';
+    }
+    if (!formData.lugar_destino) {
+      newErrors.lugar_destino = 'El lugar de destino es requerido';
     }
 
     setErrors(newErrors);
@@ -79,107 +107,146 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
 
     onSubmit({
       ...formData,
-      monto: parseFloat(formData.monto),
+      monto: parseFloat(formData.monto) || 0,
     });
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="glass-card">
-        <div className="glass-card-header">
-          <h2 className="glass-card-title">
-            {isEditing ? `Editar OC ${orden.oc} — Línea ${orden.linea_de_oc}` : 'Nueva Orden de Compra'}
-          </h2>
+      {/* Fila 1: OC, Num ID, Proveedor (solo lectura) */}
+      <div className="form-row form-row-3">
+        <Input
+          label="Num. OC"
+          id="oc"
+          name="oc"
+          value={formData.oc}
+          readOnly
+          className="form-readonly"
+          required
+        />
+        <Input
+          label="Num. ID (Solicitud)"
+          id="num_id"
+          name="num_id"
+          value={formData.num_id}
+          readOnly
+          className="form-readonly"
+        />
+        <Input
+          label="Nombre del Proveedor"
+          id="proveedor"
+          name="proveedor"
+          value={formData.proveedor}
+          readOnly
+          className="form-readonly"
+          required
+        />
+      </div>
+
+      {/* Fila 2: Fecha Notificación (readonly), Fecha Seguimiento, Estado de Entrega */}
+      <div className="form-row form-row-3">
+        <Input
+          label="Fecha de Notificación"
+          id="fecha_notificacion"
+          name="fecha_notificacion"
+          value={formData.fecha_notificacion}
+          readOnly
+          className="form-readonly"
+        />
+        <Input
+          label="Fecha de Seguimiento"
+          id="fecha_seguimiento"
+          name="fecha_seguimiento"
+          value={formData.fecha_seguimiento}
+          onChange={handleChange}
+          type="date"
+        />
+        <Select
+          label="Estado de Entrega"
+          id="estado"
+          name="estado"
+          value={formData.estado}
+          onChange={handleChange}
+          options={ESTADOS_ENTREGA}
+          placeholder="Seleccionar estado..."
+          required
+          error={errors.estado}
+        />
+      </div>
+
+      {/* Fila 3: Ticket Relacionado y Lugar Destino */}
+      <div className="form-row">
+        <div className="form-group">
+          <div className="form-label-row">
+            <label className="form-checkbox-label">
+              <input
+                type="checkbox"
+                name="tiene_ticket"
+                checked={formData.tiene_ticket}
+                onChange={handleChange}
+                className="form-checkbox"
+              />
+              <span>Ticket Relacionado</span>
+            </label>
+            {formData.tiene_ticket && formData.ticket_relacionado && (
+              <span className="form-tag form-tag-success">VINCULADO</span>
+            )}
+          </div>
+          <input
+            id="ticket_relacionado"
+            name="ticket_relacionado"
+            value={formData.ticket_relacionado}
+            onChange={handleChange}
+            placeholder="Ej: TK-89421"
+            disabled={!formData.tiene_ticket}
+            className={`form-input ${!formData.tiene_ticket ? 'form-input-disabled' : ''}`}
+          />
+          {!formData.tiene_ticket && (
+            <p className="form-hint">Desmarque la casilla para registrar sin ticket de mesa de ayuda asociado.</p>
+          )}
         </div>
-        <div className="glass-card-body">
-          <div className="form-row">
-            <Input
-              label="N° de OC"
-              id="oc"
-              name="oc"
-              value={formData.oc}
-              onChange={handleChange}
-              placeholder="Ej: 642323"
-              required
-              error={errors.oc}
-            />
-            <Input
-              label="Línea de OC"
-              id="linea_de_oc"
-              name="linea_de_oc"
-              value={formData.linea_de_oc}
-              onChange={handleChange}
-              placeholder="Ej: 1"
-              hint="Número de línea dentro de la OC"
-            />
-          </div>
 
-          <div className="form-row">
-            <Input
-              label="Proveedor"
-              id="proveedor"
-              name="proveedor"
-              value={formData.proveedor}
-              onChange={handleChange}
-              placeholder="Ej: Multimport"
-              required
-              error={errors.proveedor}
-            />
-            <Input
-              label="Comprador"
-              id="comprador"
-              name="comprador"
-              value={formData.comprador}
-              onChange={handleChange}
-              placeholder="Ej: 20222227"
-            />
-          </div>
+        <Select
+          label="Lugar Destino"
+          id="lugar_destino"
+          name="lugar_destino"
+          value={formData.lugar_destino}
+          onChange={handleChange}
+          options={LUGARES_DESTINO}
+          placeholder="Seleccionar destino..."
+          required
+          error={errors.lugar_destino}
+        />
+      </div>
 
-          <Input
-            label="Descripción"
-            id="descripcion"
-            name="descripcion"
-            value={formData.descripcion}
+      {/* Fila 4: Comentarios y Servicio de Entrega */}
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="comentarios" className="form-label">Comentarios</label>
+          <textarea
+            id="comentarios"
+            name="comentarios"
+            value={formData.comentarios}
             onChange={handleChange}
-            placeholder="Descripción del artículo o servicio"
-            required
-            error={errors.descripcion}
+            placeholder="Ingrese observaciones, notas de recepción o comentarios adicionales sobre la orden..."
+            className="form-input form-textarea"
+            maxLength={500}
           />
+          <p className="form-hint">Máximo 500 caracteres</p>
+        </div>
 
-          <div className="form-row">
-            <Input
-              label="Monto"
-              id="monto"
-              name="monto"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.monto}
-              onChange={handleChange}
-              placeholder="0.00"
-              required
-              error={errors.monto}
-            />
-            <Select
-              label="Estado"
-              id="estado"
-              name="estado"
-              value={formData.estado}
-              onChange={handleChange}
-              options={ESTADOS_LIST}
-              required
-              error={errors.estado}
-            />
-          </div>
-
-          <Input
-            label="Fecha de Vencimiento"
-            id="fecha_vencimiento"
-            name="fecha_vencimiento"
-            type="date"
-            value={formData.fecha_vencimiento}
+        <div className="form-group">
+          <label htmlFor="servicio_entrega" className="form-label">Servicio de Entrega</label>
+          <textarea
+            id="servicio_entrega"
+            name="servicio_entrega"
+            value={formData.servicio_entrega}
             onChange={handleChange}
+            placeholder="Ingrese detalles, instrucciones o requerimientos del servicio de entrega..."
+            className="form-input form-textarea"
+            maxLength={500}
           />
+          <p className="form-hint">Máximo 500 caracteres</p>
         </div>
       </div>
 
@@ -201,7 +268,7 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
           loading={saving}
           icon='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
         >
-          {isEditing ? 'Guardar Cambios' : 'Crear Orden'}
+          Guardar
         </Button>
       </div>
     </form>
