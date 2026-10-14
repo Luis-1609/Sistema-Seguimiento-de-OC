@@ -1800,6 +1800,10 @@ a:hover {
   padding-left: calc(4px + var(--space-3));
 }
 
+.pv-filter-search {
+  max-width: 420px;
+}
+
 /* OC Cell with urgency tag */
 .pv-oc-cell {
   display: flex;

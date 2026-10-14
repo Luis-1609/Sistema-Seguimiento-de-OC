@@ -76,6 +76,10 @@ export default function PorVencerPage() {
   const [fechasSeguimiento, setFechasSeguimiento] = useState({});
   const [guardando, setGuardando] = useState(false);
 
+  // Estados de búsqueda por sección
+  const [searchSeguimiento, setSearchSeguimiento] = useState('');
+  const [searchServicios, setSearchServicios] = useState('');
+
   // Filtrar órdenes que están por vencer (no finalizadas)
   // Excluimos las que ya están "Entregado" completamente o "Anulado"
   const ordenesPorVencer = useMemo(() => {
@@ -89,6 +93,28 @@ export default function PorVencerPage() {
       .sort((a, b) => diasParaVencer(a.fecha_vencimiento) - diasParaVencer(b.fecha_vencimiento));
   }, [ordenes]);
 
+  // Filtrado de órdenes por vencer mediante buscador
+  const filteredOrdenesPorVencer = useMemo(() => {
+    if (!searchSeguimiento.trim()) return ordenesPorVencer;
+    const term = searchSeguimiento.toLowerCase().trim();
+    return ordenesPorVencer.filter((o) => {
+      const ocStr = String(o.oc || '').toLowerCase();
+      const prov = (o.proveedor || '').toLowerCase();
+      const est = (o.estado || '').toLowerCase();
+      const com = (o.comentarios || '').toLowerCase();
+      const desc = (o.descripcion || '').toLowerCase();
+      const dest = (o.lugar_destino || '').toLowerCase();
+      return (
+        ocStr.includes(term) ||
+        prov.includes(term) ||
+        est.includes(term) ||
+        com.includes(term) ||
+        desc.includes(term) ||
+        dest.includes(term)
+      );
+    });
+  }, [ordenesPorVencer, searchSeguimiento]);
+
   // Tabla 2: Servicios de Entrega — órdenes cuyo destino es "Almacén de DTI"
   // y su estado indica que ya fue entregado/parcial (requiere despacho interno)
   const serviciosEntrega = useMemo(() => {
@@ -99,6 +125,32 @@ export default function PorVencerPage() {
         ESTADOS_SERVICIO.includes(o.estado)
     );
   }, [ordenes]);
+
+  // Filtrado de servicios de entrega mediante buscador
+  const filteredServiciosEntrega = useMemo(() => {
+    if (!searchServicios.trim()) return serviciosEntrega;
+    const term = searchServicios.toLowerCase().trim();
+    return serviciosEntrega.filter((o) => {
+      const ocStr = String(o.oc || '').toLowerCase();
+      const prov = (o.proveedor || '').toLowerCase();
+      const ticket = String(o.ticket_relacionado || '').toLowerCase();
+      const tarea = String(o.numero_tarea || '').toLowerCase();
+      const est = (o.estado || '').toLowerCase();
+      const com = (o.comentarios || '').toLowerCase();
+      const srv = (o.servicio_entrega || '').toLowerCase();
+      const desc = (o.descripcion || '').toLowerCase();
+      return (
+        ocStr.includes(term) ||
+        prov.includes(term) ||
+        ticket.includes(term) ||
+        tarea.includes(term) ||
+        est.includes(term) ||
+        com.includes(term) ||
+        srv.includes(term) ||
+        desc.includes(term)
+      );
+    });
+  }, [serviciosEntrega, searchServicios]);
 
   const handleFechaSeguimientoChange = (key, value) => {
     setFechasSeguimiento((prev) => ({ ...prev, [key]: value }));
@@ -148,12 +200,25 @@ export default function PorVencerPage() {
             <div className="pv-section-indicator pv-section-indicator--primary" />
             <h2 className="pv-section-title">Seguimiento de Órdenes de Compra</h2>
             <span className="pv-badge pv-badge--info">
-              {ordenesPorVencer.length} {ordenesPorVencer.length === 1 ? 'orden registrada' : 'órdenes registradas'}
+              {filteredOrdenesPorVencer.length} {filteredOrdenesPorVencer.length === 1 ? 'orden registrada' : 'órdenes registradas'}
             </span>
           </div>
           <p className="pv-section-hint">
             Las fechas y estados son editables. La fecha de seguimiento es independiente de la registrada en la edición de OC.
           </p>
+        </div>
+
+        {/* Buscador Seguimiento */}
+        <div className="filter-bar">
+          <div className="filter-search pv-filter-search">
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Buscar por OC, proveedor, descripción..."
+              value={searchSeguimiento}
+              onChange={(e) => setSearchSeguimiento(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="glass-card">
@@ -170,16 +235,24 @@ export default function PorVencerPage() {
                 </tr>
               </thead>
               <tbody>
-                {ordenesPorVencer.length === 0 ? (
+                {filteredOrdenesPorVencer.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="table-empty">
                       <div className="table-empty-icon">📋</div>
-                      <div className="table-empty-text">No hay órdenes por vencer</div>
-                      <div className="table-empty-sub">Todas las órdenes están al día</div>
+                      <div className="table-empty-text">
+                        {searchSeguimiento
+                          ? 'No se encontraron órdenes con esos criterios'
+                          : 'No hay órdenes por vencer'}
+                      </div>
+                      <div className="table-empty-sub">
+                        {searchSeguimiento
+                          ? 'Intenta con otros términos de búsqueda'
+                          : 'Todas las órdenes están al día'}
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  ordenesPorVencer.map((orden) => {
+                  filteredOrdenesPorVencer.map((orden) => {
                     const dias = diasParaVencer(orden.fecha_vencimiento);
                     const urgencyClass = getUrgencyClass(dias);
                     const rowKey = `${orden.oc}-${orden.id}`;
@@ -242,12 +315,25 @@ export default function PorVencerPage() {
             <div className="pv-section-indicator pv-section-indicator--dark" />
             <h2 className="pv-section-title">Servicios de Entrega (Almacén de DTI)</h2>
             <span className="pv-badge pv-badge--warning">
-              {serviciosEntrega.length} {serviciosEntrega.length === 1 ? 'caso pendiente' : 'casos pendientes'}
+              {filteredServiciosEntrega.length} {filteredServiciosEntrega.length === 1 ? 'caso pendiente' : 'casos pendientes'}
             </span>
           </div>
           <p className="pv-section-hint">
             Órdenes con destino Almacén de DTI y estado Entregado o Entrega parcial. Al completar y asignar tarea, la orden concluye este flujo.
           </p>
+        </div>
+
+        {/* Buscador Servicios de Entrega */}
+        <div className="filter-bar">
+          <div className="filter-search pv-filter-search">
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Buscar por OC, proveedor, N° ticket, tarea..."
+              value={searchServicios}
+              onChange={(e) => setSearchServicios(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="glass-card">
@@ -264,16 +350,24 @@ export default function PorVencerPage() {
                 </tr>
               </thead>
               <tbody>
-                {serviciosEntrega.length === 0 ? (
+                {filteredServiciosEntrega.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="table-empty">
                       <div className="table-empty-icon">📦</div>
-                      <div className="table-empty-text">No hay servicios de entrega pendientes</div>
-                      <div className="table-empty-sub">No hay órdenes que requieran despacho</div>
+                      <div className="table-empty-text">
+                        {searchServicios
+                          ? 'No se encontraron servicios de entrega'
+                          : 'No hay servicios de entrega pendientes'}
+                      </div>
+                      <div className="table-empty-sub">
+                        {searchServicios
+                          ? 'Intenta con otros términos de búsqueda'
+                          : 'No hay órdenes que requieran despacho'}
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  serviciosEntrega.map((orden) => {
+                  filteredServiciosEntrega.map((orden) => {
                     const rowKey = `srv-${orden.oc}-${orden.id}`;
                     return (
                       <tr key={rowKey}>
