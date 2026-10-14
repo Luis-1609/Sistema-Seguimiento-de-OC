@@ -1961,3 +1961,54 @@ tr.urgency-normal {
   margin-top: var(--space-6);
   margin-bottom: var(--space-6);
 }
+
+/* =========================================
+   FACTURACIÓN PAGE — Etiqueta Badges
+   ========================================= */
+
+.facturacion-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-md);
+  font: var(--font-label-md);
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+
+/* Parcial — amarillo/naranja (warning) */
+.facturacion-badge--parcial {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-color: var(--color-warning-border);
+}
+
+/* Facturado — verde (success) */
+.facturacion-badge--facturado {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: var(--color-success-border);
+}
+
+/* Por facturar — azul (info) */
+.facturacion-badge--por-facturar {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border-color: var(--color-info-border);
+}
+
+/* Diferencia mínima — morado */
+.facturacion-badge--diferencia-minima {
+  background: #faf5ff;
+  color: #7c3aed;
+  border-color: #ddd6fe;
+}
+
+/* Falta recepción — rojo (error) */
+.facturacion-badge--falta-recepcion {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-color: var(--color-error-border);
+}
