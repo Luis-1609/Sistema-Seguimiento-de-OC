@@ -10,6 +10,7 @@ const PAGE_TITLES = {
   '/': { title: 'Dashboard', breadcrumb: ['Inicio'] },
   '/ordenes': { title: 'Órdenes de Compra', breadcrumb: ['Inicio', 'Órdenes'] },
   '/ordenes/nueva': { title: 'Nueva Orden', breadcrumb: ['Inicio', 'Órdenes', 'Nueva'] },
+  '/por-vencer': { title: 'Órdenes por Vencer', breadcrumb: ['Inicio', 'Por Vencer'] },
 };
 
 export default function Header() {

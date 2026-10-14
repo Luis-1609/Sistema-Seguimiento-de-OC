@@ -1732,3 +1732,232 @@ a:hover {
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
+
+/* =========================================
+   POR VENCER PAGE
+   ========================================= */
+
+.pv-section {
+  margin-bottom: var(--space-8);
+}
+
+.pv-section-header {
+  margin-bottom: var(--space-4);
+}
+
+.pv-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.pv-section-indicator {
+  width: 4px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.pv-section-indicator--primary {
+  background: var(--color-secondary);
+}
+
+.pv-section-indicator--dark {
+  background: var(--color-primary);
+}
+
+.pv-section-title {
+  font: var(--font-headline-md);
+  color: var(--color-text-primary);
+}
+
+.pv-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  font: var(--font-label-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pv-badge--info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
+}
+
+.pv-badge--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
+}
+
+.pv-section-hint {
+  font: var(--font-body-sm);
+  color: var(--color-text-tertiary);
+  padding-left: calc(4px + var(--space-3));
+}
+
+/* OC Cell with urgency tag */
+.pv-oc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pv-oc-number {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+}
+
+.pv-urgency-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font: var(--font-label-sm);
+  font-weight: 600;
+  width: fit-content;
+}
+
+.pv-urgency-tag.urgency-vencida {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+}
+
+.pv-urgency-tag.urgency-critica {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
+}
+
+.pv-urgency-tag.urgency-proxima {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
+}
+
+.pv-urgency-tag.urgency-normal {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
+}
+
+/* Proveedor cell */
+.pv-proveedor-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pv-proveedor-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.pv-proveedor-sub {
+  font: var(--font-body-sm);
+  color: var(--color-text-tertiary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Date input inline */
+.pv-date-input {
+  max-width: 160px;
+  font-size: var(--font-size-sm) !important;
+  padding: var(--space-2) var(--space-3) !important;
+}
+
+/* Comment text */
+.pv-comment-text {
+  font: var(--font-body-sm);
+  color: var(--color-text-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* Lugar destino badges */
+.pv-destino-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-md);
+  font: var(--font-label-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.pv-destino-badge--almacen-de-dti {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.pv-destino-badge--local-externo {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.pv-destino-badge--unidad-en-el-campus {
+  background: #faf5ff;
+  color: #7c3aed;
+  border-color: #ddd6fe;
+}
+
+.pv-destino-badge--servicios {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+/* Ticket badge */
+.pv-ticket-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-DEFAULT);
+  font: var(--font-label-md);
+  font-weight: 600;
+  background: var(--color-surface-container);
+  color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+}
+
+/* Urgency row highlights (subtle left border) */
+tr.urgency-vencida {
+  border-left: 3px solid var(--color-error);
+}
+
+tr.urgency-critica {
+  border-left: 3px solid var(--color-warning);
+}
+
+tr.urgency-proxima {
+  border-left: 3px solid var(--color-info);
+}
+
+tr.urgency-normal {
+  border-left: 3px solid transparent;
+}
+
+/* Footer Guardar Cambios Button */
+.pv-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-6);
+}

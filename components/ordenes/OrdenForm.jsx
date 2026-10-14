@@ -7,9 +7,8 @@ import Button from '@/components/ui/Button';
 
 /**
  * Formulario para editar una orden de compra.
- * Campos de solo lectura: OC, Num ID, Proveedor, Fecha de Notificación.
- * Campos editables: Fecha de Seguimiento, Estado de Entrega, Ticket Relacionado,
- *                   Lugar Destino, Comentarios, Servicio de Entrega.
+ * Campos de solo lectura: OC, Num ID, Proveedor, Fecha de Notificación, Fecha de Vencimiento.
+ * Campos editables: Estado de Entrega, Ticket Relacionado, Lugar Destino, Comentarios, Servicio de Entrega.
  */
 
 const ESTADOS_ENTREGA = [
@@ -58,8 +57,8 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
         oc: orden.oc || '',
         num_id: orden.id || orden.num_id || '',
         proveedor: orden.proveedor || '',
-        fecha_notificacion: orden.fecha_notificacion || orden.fecha_vencimiento || '',
-        fecha_seguimiento: orden.fecha_seguimiento || '',
+        fecha_notificacion: orden.fecha_notificacion || '',
+        fecha_vencimiento: orden.fecha_vencimiento || '',
         estado: orden.estado || '',
         ticket_relacionado: orden.ticket_relacionado || '',
         tiene_ticket: !!(orden.ticket_relacionado),
@@ -70,7 +69,6 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
         id: orden.id || '',
         monto: orden.monto || '',
         descripcion: orden.descripcion || '',
-        fecha_vencimiento: orden.fecha_vencimiento || '',
         comprador: orden.comprador || '',
       });
     }
@@ -143,7 +141,7 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
         />
       </div>
 
-      {/* Fila 2: Fecha Notificación (readonly), Fecha Seguimiento, Estado de Entrega */}
+      {/* Fila 2: Fecha Notificación (readonly), Fecha Vencimiento, Estado de Entrega */}
       <div className="form-row form-row-3">
         <Input
           label="Fecha de Notificación"
@@ -154,12 +152,12 @@ export default function OrdenForm({ orden, onSubmit, onCancel, saving }) {
           className="form-readonly"
         />
         <Input
-          label="Fecha de Seguimiento"
-          id="fecha_seguimiento"
-          name="fecha_seguimiento"
-          value={formData.fecha_seguimiento}
-          onChange={handleChange}
-          type="date"
+          label="Fecha de Vencimiento"
+          id="fecha_vencimiento"
+          name="fecha_vencimiento"
+          value={formData.fecha_vencimiento}
+          readOnly
+          className="form-readonly"
         />
         <Select
           label="Estado de Entrega"

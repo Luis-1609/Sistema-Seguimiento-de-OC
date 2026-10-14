@@ -150,6 +150,7 @@ export default function OrdenesTable({
                 <th>Descripción</th>
                 <th>Monto</th>
                 <th>Estado</th>
+                <th>F. Notificación</th>
                 <th>F. Vencimiento</th>
                 <th>Comprador</th>
                 <th>Acciones</th>
@@ -158,7 +159,7 @@ export default function OrdenesTable({
             <tbody>
               {filteredOrdenes.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="table-empty">
+                  <td colSpan="10" className="table-empty">
                     <div className="table-empty-icon">📋</div>
                     <div className="table-empty-text">
                       {searchTerm || filterEstado || filterComprador !== 'all'
@@ -201,6 +202,7 @@ export default function OrdenesTable({
                       <td>
                         <StatusBadge estado={orden.estado} />
                       </td>
+                      <td>{formatFecha(orden.fecha_notificacion)}</td>
                       <td>{formatFecha(orden.fecha_vencimiento)}</td>
                       <td>
                         <span className="comprador-badge" title={orden.comprador}>
