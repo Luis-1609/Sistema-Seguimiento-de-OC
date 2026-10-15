@@ -1088,6 +1088,139 @@ a:hover {
   border: 1px solid var(--color-success);
 }
 
+.form-tag-muted {
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-container-low);
+}
+
+/* Document Selector (KIBA, Ticket, Contrato, Informe CT) */
+.doc-selector-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.doc-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  font: var(--font-body-xs);
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast) ease;
+  user-select: none;
+}
+
+.doc-chip-btn:hover {
+  background: var(--color-surface-container);
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.doc-chip-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(10, 37, 64, 0.16);
+}
+
+.doc-chip-btn.active:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-light);
+  color: #ffffff;
+}
+
+.doc-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.doc-chip-indicator {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.doc-inputs-container {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.doc-inputs-container.multi {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.doc-input-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: fadeIn var(--transition-fast) ease-out;
+}
+
+.doc-input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-input-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-input-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 1px 4px;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast) ease;
+}
+
+.doc-input-remove:hover {
+  color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.doc-empty-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 9px 12px;
+  background: var(--color-surface-container-low);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font: var(--font-body-xs);
+  line-height: 1.4;
+  margin-top: var(--space-1);
+}
+
 /* Textarea */
 .form-textarea {
   min-height: 100px;

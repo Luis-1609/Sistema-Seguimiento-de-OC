@@ -74,7 +74,8 @@ export default function PorVencerPage() {
 
   // Estado local para las fechas de seguimiento editables en esta pantalla
   const [fechasSeguimiento, setFechasSeguimiento] = useState({});
-  const [guardando, setGuardando] = useState(false);
+  const [guardandoSeguimiento, setGuardandoSeguimiento] = useState(false);
+  const [guardandoServicios, setGuardandoServicios] = useState(false);
 
   // Estados de búsqueda por sección
   const [searchSeguimiento, setSearchSeguimiento] = useState('');
@@ -156,16 +157,29 @@ export default function PorVencerPage() {
     setFechasSeguimiento((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleGuardarCambios = async () => {
-    setGuardando(true);
+  const handleGuardarSeguimiento = async () => {
+    setGuardandoSeguimiento(true);
     try {
-      // Simular guardado / sincronización de los cambios realizados
+      // Guardar cambios específicos de la sección de Seguimiento de Órdenes
       await new Promise((resolve) => setTimeout(resolve, 600));
-      toast.success('Cambios guardados', 'Los datos de seguimiento y servicios de entrega han sido actualizados.');
+      toast.success('Seguimiento guardado', 'Los datos de seguimiento de órdenes de compra han sido actualizados.');
     } catch (err) {
-      toast.error('Error', 'Ocurrió un problema al guardar los cambios.');
+      toast.error('Error', 'Ocurrió un problema al guardar el seguimiento.');
     } finally {
-      setGuardando(false);
+      setGuardandoSeguimiento(false);
+    }
+  };
+
+  const handleGuardarServicios = async () => {
+    setGuardandoServicios(true);
+    try {
+      // Guardar cambios específicos de la sección de Servicios de Entrega
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      toast.success('Servicios guardados', 'Los datos de servicios de entrega han sido actualizados.');
+    } catch (err) {
+      toast.error('Error', 'Ocurrió un problema al guardar los servicios de entrega.');
+    } finally {
+      setGuardandoServicios(false);
     }
   };
 
@@ -229,6 +243,7 @@ export default function PorVencerPage() {
                   <th>N° de OC</th>
                   <th>Proveedor</th>
                   <th>Fecha Seguimiento</th>
+                  <th>Reprogramaciones</th>
                   <th>Estado de Entrega</th>
                   <th>Comentarios</th>
                   <th>Lugar de Destino</th>
@@ -281,6 +296,9 @@ export default function PorVencerPage() {
                             onChange={(e) => handleFechaSeguimientoChange(rowKey, e.target.value)}
                           />
                         </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {0}
+                        </td>
                         <td>
                           <StatusBadge estado={orden.estado} />
                         </td>
@@ -305,6 +323,18 @@ export default function PorVencerPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Botón Guardar Cambios para Seguimiento de Órdenes de Compra */}
+        <div className="pv-footer-actions">
+          <Button
+            variant="primary"
+            onClick={handleGuardarSeguimiento}
+            loading={guardandoSeguimiento}
+            icon='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
+          >
+            Guardar Cambios
+          </Button>
         </div>
       </div>
 
@@ -410,12 +440,12 @@ export default function PorVencerPage() {
         </div>
       </div>
 
-      {/* Botón Guardar Cambios suelto */}
+      {/* Botón Guardar Cambios para Servicios de Entrega */}
       <div className="pv-footer-actions">
         <Button
           variant="primary"
-          onClick={handleGuardarCambios}
-          loading={guardando}
+          onClick={handleGuardarServicios}
+          loading={guardandoServicios}
           icon='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
         >
           Guardar Cambios
