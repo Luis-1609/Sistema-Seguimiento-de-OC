@@ -147,7 +147,7 @@ export default function OrdenesTable({
                 <th style={{ textAlign: 'center' }}>OC</th>
                 <th style={{ textAlign: 'center' }}>ID</th>
                 <th>Proveedor</th>
-                <th>Descripción</th>
+
                 <th>Monto</th>
                 <th>Estado</th>
                 <th>F. Notificación</th>
@@ -195,9 +195,8 @@ export default function OrdenesTable({
                       <td style={{ textAlign: 'center' }}>{orden.id}</td>
 
                       <td>{orden.proveedor}</td>
-                      <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {orden.descripcion}
-                      </td>
+
+
                       <td className="table-cell-monto">{formatMonto(orden.monto)}</td>
                       <td>
                         <StatusBadge estado={orden.estado} />
