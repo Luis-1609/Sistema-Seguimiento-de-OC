@@ -15,13 +15,18 @@ import { formatMonto, formatFecha } from '@/lib/constants';
  * 
  * Muestra dos tablas:
  * 1. Seguimiento de Órdenes de Compra: OC cuya fecha de vencimiento está próxima.
- *    Columnas: N° OC, Proveedor, Fecha Seguimiento, Estado de Entrega, Comentarios, Lugar de Destino.
- *    La "Fecha Seguimiento" aquí es un campo editable en línea (tipo date picker) distinto
- *    al campo "Fecha de Seguimiento" del formulario de edición de OC.
+ *    Columnas: N° OC, Proveedor, Fecha Seguimiento, Comprador, Reprogramaciones,
+ *              Estado de Entrega, Comentarios, Lugar de Destino.
+ *    Por defecto muestra solo las de estado "Por Entregar".
+ *    Al usar el buscador, busca en todos los estados.
  * 
  * 2. Servicios de Entrega: OC cuyo lugar de destino es "Almacén de DTI" y su estado
  *    es "Entregado" o "Entrega Parcial" (requieren tareas de despacho).
- *    Columnas: N° OC, Proveedor, N° Ticket, Comentarios, N° Tarea, Estado.
+ *    Columnas: N° OC, Proveedor, N° Ticket, Comentarios, N° Tarea, Estado Tarea.
+ *    El "Estado" en esta tabla es el estado de la tarea (PENDIENTE, REGISTRADA, etc.),
+ *    no el estado de la OC.
+ *    Por defecto muestra solo las de estado de tarea "PENDIENTE".
+ *    Al usar el buscador, busca en todos los estados de tarea.
  */
 
 /**
@@ -69,7 +74,7 @@ function getUrgencyLabel(dias) {
 
 export default function PorVencerPage() {
   const { ordenes, loading } = useOrdenes();
-  const { usuarios } = useUser();
+  const { activeUser, usuarios } = useUser();
   const toast = useToast();
 
   // Estado local para las fechas de seguimiento editables en esta pantalla
@@ -81,8 +86,13 @@ export default function PorVencerPage() {
   const [searchSeguimiento, setSearchSeguimiento] = useState('');
   const [searchServicios, setSearchServicios] = useState('');
 
-  // Filtrar órdenes que están por vencer (no finalizadas)
-  // Excluimos las que ya están "Entregado" completamente o "Anulado"
+  // Filtros de comprador por sección
+  const [filterCompradorSeg, setFilterCompradorSeg] = useState('mine');
+  const [filterCompradorSrv, setFilterCompradorSrv] = useState('mine');
+
+  // === SECCIÓN 1: Seguimiento de Órdenes de Compra ===
+
+  // Base: todas las órdenes no anuladas que tengan fecha de vencimiento
   const ordenesPorVencer = useMemo(() => {
     const ESTADOS_EXCLUIDOS = ['Anulado'];
     return ordenes
@@ -94,30 +104,66 @@ export default function PorVencerPage() {
       .sort((a, b) => diasParaVencer(a.fecha_vencimiento) - diasParaVencer(b.fecha_vencimiento));
   }, [ordenes]);
 
-  // Filtrado de órdenes por vencer mediante buscador
-  const filteredOrdenesPorVencer = useMemo(() => {
-    if (!searchSeguimiento.trim()) return ordenesPorVencer;
-    const term = searchSeguimiento.toLowerCase().trim();
-    return ordenesPorVencer.filter((o) => {
-      const ocStr = String(o.oc || '').toLowerCase();
-      const prov = (o.proveedor || '').toLowerCase();
-      const est = (o.estado || '').toLowerCase();
-      const com = (o.comentarios || '').toLowerCase();
-      const desc = (o.descripcion || '').toLowerCase();
-      const dest = (o.lugar_destino || '').toLowerCase();
-      return (
-        ocStr.includes(term) ||
-        prov.includes(term) ||
-        est.includes(term) ||
-        com.includes(term) ||
-        desc.includes(term) ||
-        dest.includes(term)
-      );
+  // Compradores únicos presentes en datos de seguimiento
+  const compradoresUnicosSeg = useMemo(() => {
+    const codes = [...new Set(ordenesPorVencer.map((o) => o.comprador).filter(Boolean))];
+    return codes.map((code) => {
+      const user = usuarios.find((u) => u.codigo_comprador === code);
+      return {
+        code,
+        name: user ? getFirstName(user.nombre_comprador) : code,
+      };
     });
-  }, [ordenesPorVencer, searchSeguimiento]);
+  }, [ordenesPorVencer, usuarios]);
 
-  // Tabla 2: Servicios de Entrega — órdenes cuyo destino es "Almacén de DTI"
-  // y su estado indica que ya fue entregado/parcial (requiere despacho interno)
+  // Contar OC del usuario actual en seguimiento
+  const myCountSeg = ordenesPorVencer.filter(
+    (o) => o.comprador === activeUser?.codigo_comprador
+  ).length;
+
+  // Filtrado final de la tabla 1:
+  // - Si hay búsqueda activa: busca en todos los estados (ignora filtro "Por Entregar")
+  // - Si no hay búsqueda: muestra solo "Por Entregar" + filtro de comprador
+  const filteredOrdenesPorVencer = useMemo(() => {
+    const isSearching = searchSeguimiento.trim().length > 0;
+
+    return ordenesPorVencer.filter((o) => {
+      // Filtro de comprador
+      let matchComprador = true;
+      if (filterCompradorSeg === 'mine') {
+        matchComprador = o.comprador === activeUser?.codigo_comprador;
+      } else if (filterCompradorSeg && filterCompradorSeg !== 'all') {
+        matchComprador = o.comprador === filterCompradorSeg;
+      }
+
+      if (isSearching) {
+        // Cuando hay búsqueda: buscar en todos los estados
+        const term = searchSeguimiento.toLowerCase().trim();
+        const ocStr = String(o.oc || '').toLowerCase();
+        const prov = (o.proveedor || '').toLowerCase();
+        const est = (o.estado || '').toLowerCase();
+        const com = (o.comentarios || '').toLowerCase();
+        const desc = (o.descripcion || '').toLowerCase();
+        const dest = (o.lugar_destino || '').toLowerCase();
+        const matchSearch =
+          ocStr.includes(term) ||
+          prov.includes(term) ||
+          est.includes(term) ||
+          com.includes(term) ||
+          desc.includes(term) ||
+          dest.includes(term);
+        return matchComprador && matchSearch;
+      } else {
+        // Sin búsqueda: mostrar solo "Por Entregar"
+        const matchEstado = o.estado === 'Por Entregar';
+        return matchComprador && matchEstado;
+      }
+    });
+  }, [ordenesPorVencer, searchSeguimiento, filterCompradorSeg, activeUser]);
+
+  // === SECCIÓN 2: Servicios de Entrega ===
+
+  // Base: órdenes cuyo destino es "Almacén de DTI" y estado "Entregado" o "Entrega Parcial"
   const serviciosEntrega = useMemo(() => {
     const ESTADOS_SERVICIO = ['Entregado', 'Entrega Parcial'];
     return ordenes.filter(
@@ -127,31 +173,64 @@ export default function PorVencerPage() {
     );
   }, [ordenes]);
 
-  // Filtrado de servicios de entrega mediante buscador
-  const filteredServiciosEntrega = useMemo(() => {
-    if (!searchServicios.trim()) return serviciosEntrega;
-    const term = searchServicios.toLowerCase().trim();
-    return serviciosEntrega.filter((o) => {
-      const ocStr = String(o.oc || '').toLowerCase();
-      const prov = (o.proveedor || '').toLowerCase();
-      const ticket = String(o.ticket_relacionado || '').toLowerCase();
-      const tarea = String(o.numero_tarea || '').toLowerCase();
-      const est = (o.estado || '').toLowerCase();
-      const com = (o.comentarios || '').toLowerCase();
-      const srv = (o.servicio_entrega || '').toLowerCase();
-      const desc = (o.descripcion || '').toLowerCase();
-      return (
-        ocStr.includes(term) ||
-        prov.includes(term) ||
-        ticket.includes(term) ||
-        tarea.includes(term) ||
-        est.includes(term) ||
-        com.includes(term) ||
-        srv.includes(term) ||
-        desc.includes(term)
-      );
+  // Compradores únicos presentes en datos de servicios
+  const compradoresUnicosSrv = useMemo(() => {
+    const codes = [...new Set(serviciosEntrega.map((o) => o.comprador).filter(Boolean))];
+    return codes.map((code) => {
+      const user = usuarios.find((u) => u.codigo_comprador === code);
+      return {
+        code,
+        name: user ? getFirstName(user.nombre_comprador) : code,
+      };
     });
-  }, [serviciosEntrega, searchServicios]);
+  }, [serviciosEntrega, usuarios]);
+
+  // Contar OC del usuario actual en servicios
+  const myCountSrv = serviciosEntrega.filter(
+    (o) => o.comprador === activeUser?.codigo_comprador
+  ).length;
+
+  // Filtrado final de la tabla 2:
+  // - Si hay búsqueda activa: busca en todos los estados de tarea
+  // - Si no hay búsqueda: muestra solo estado de tarea "PENDIENTE" + filtro de comprador
+  const filteredServiciosEntrega = useMemo(() => {
+    const isSearching = searchServicios.trim().length > 0;
+
+    return serviciosEntrega.filter((o) => {
+      // Filtro de comprador
+      let matchComprador = true;
+      if (filterCompradorSrv === 'mine') {
+        matchComprador = o.comprador === activeUser?.codigo_comprador;
+      } else if (filterCompradorSrv && filterCompradorSrv !== 'all') {
+        matchComprador = o.comprador === filterCompradorSrv;
+      }
+
+      if (isSearching) {
+        // Cuando hay búsqueda: buscar en todos los estados de tarea
+        const term = searchServicios.toLowerCase().trim();
+        const ocStr = String(o.oc || '').toLowerCase();
+        const prov = (o.proveedor || '').toLowerCase();
+        const ticket = String(o.ticket_relacionado || '').toLowerCase();
+        const tarea = String(o.numero_tarea || '').toLowerCase();
+        const com = (o.comentarios || '').toLowerCase();
+        const srv = (o.servicio_entrega || '').toLowerCase();
+        const desc = (o.descripcion || '').toLowerCase();
+        const matchSearch =
+          ocStr.includes(term) ||
+          prov.includes(term) ||
+          ticket.includes(term) ||
+          tarea.includes(term) ||
+          com.includes(term) ||
+          srv.includes(term) ||
+          desc.includes(term);
+        return matchComprador && matchSearch;
+      } else {
+        // Sin búsqueda: mostrar solo tareas con estado "PENDIENTE"
+        const estadoTarea = (o.estado_tarea || 'PENDIENTE').toUpperCase();
+        return matchComprador && estadoTarea === 'PENDIENTE';
+      }
+    });
+  }, [serviciosEntrega, searchServicios, filterCompradorSrv, activeUser]);
 
   const handleFechaSeguimientoChange = (key, value) => {
     setFechasSeguimiento((prev) => ({ ...prev, [key]: value }));
@@ -222,6 +301,42 @@ export default function PorVencerPage() {
           </p>
         </div>
 
+        {/* Filtro de Comprador — Seguimiento */}
+        <div className="filter-bar buyer-filter-bar">
+          <span className="filter-bar-label">Comprador:</span>
+          <button
+            className={`filter-chip ${filterCompradorSeg === 'mine' ? 'active' : ''}`}
+            onClick={() => setFilterCompradorSeg('mine')}
+          >
+            <span className="filter-chip-dot" />
+            Mis OC ({myCountSeg})
+          </button>
+          <button
+            className={`filter-chip ${filterCompradorSeg === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterCompradorSeg('all')}
+          >
+            Todas ({ordenesPorVencer.length})
+          </button>
+          {compradoresUnicosSeg
+            .filter((c) => c.code !== activeUser?.codigo_comprador)
+            .map((comprador) => {
+              const count = ordenesPorVencer.filter((o) => o.comprador === comprador.code).length;
+              return (
+                <button
+                  key={comprador.code}
+                  className={`filter-chip ${filterCompradorSeg === comprador.code ? 'active' : ''}`}
+                  onClick={() =>
+                    setFilterCompradorSeg(
+                      filterCompradorSeg === comprador.code ? 'mine' : comprador.code
+                    )
+                  }
+                >
+                  {comprador.name} ({count})
+                </button>
+              );
+            })}
+        </div>
+
         {/* Buscador Seguimiento */}
         <div className="filter-bar">
           <div className="filter-search pv-filter-search">
@@ -243,6 +358,7 @@ export default function PorVencerPage() {
                   <th>N° de OC</th>
                   <th>Proveedor</th>
                   <th>Fecha Seguimiento</th>
+                  <th>Comprador</th>
                   <th>Reprogramaciones</th>
                   <th>Estado de Entrega</th>
                   <th>Comentarios</th>
@@ -252,7 +368,7 @@ export default function PorVencerPage() {
               <tbody>
                 {filteredOrdenesPorVencer.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="table-empty">
+                    <td colSpan="8" className="table-empty">
                       <div className="table-empty-icon">📋</div>
                       <div className="table-empty-text">
                         {searchSeguimiento
@@ -272,6 +388,14 @@ export default function PorVencerPage() {
                     const urgencyClass = getUrgencyClass(dias);
                     const rowKey = `${orden.oc}-${orden.id}`;
                     const fechaSeg = fechasSeguimiento[rowKey] || '';
+
+                    // Resolver nombre del comprador
+                    const compradorUser = usuarios.find(
+                      (u) => u.codigo_comprador === orden.comprador
+                    );
+                    const compradorDisplay = compradorUser
+                      ? getFirstName(compradorUser.nombre_comprador)
+                      : orden.comprador;
 
                     return (
                       <tr key={rowKey} className={urgencyClass}>
@@ -295,6 +419,11 @@ export default function PorVencerPage() {
                             value={fechaSeg}
                             onChange={(e) => handleFechaSeguimientoChange(rowKey, e.target.value)}
                           />
+                        </td>
+                        <td>
+                          <span className="comprador-badge" title={orden.comprador}>
+                            {compradorDisplay}
+                          </span>
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           {0}
@@ -353,6 +482,42 @@ export default function PorVencerPage() {
           </p>
         </div>
 
+        {/* Filtro de Comprador — Servicios */}
+        <div className="filter-bar buyer-filter-bar">
+          <span className="filter-bar-label">Comprador:</span>
+          <button
+            className={`filter-chip ${filterCompradorSrv === 'mine' ? 'active' : ''}`}
+            onClick={() => setFilterCompradorSrv('mine')}
+          >
+            <span className="filter-chip-dot" />
+            Mis OC ({myCountSrv})
+          </button>
+          <button
+            className={`filter-chip ${filterCompradorSrv === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterCompradorSrv('all')}
+          >
+            Todas ({serviciosEntrega.length})
+          </button>
+          {compradoresUnicosSrv
+            .filter((c) => c.code !== activeUser?.codigo_comprador)
+            .map((comprador) => {
+              const count = serviciosEntrega.filter((o) => o.comprador === comprador.code).length;
+              return (
+                <button
+                  key={comprador.code}
+                  className={`filter-chip ${filterCompradorSrv === comprador.code ? 'active' : ''}`}
+                  onClick={() =>
+                    setFilterCompradorSrv(
+                      filterCompradorSrv === comprador.code ? 'mine' : comprador.code
+                    )
+                  }
+                >
+                  {comprador.name} ({count})
+                </button>
+              );
+            })}
+        </div>
+
         {/* Buscador Servicios de Entrega */}
         <div className="filter-bar">
           <div className="filter-search pv-filter-search">
@@ -376,7 +541,7 @@ export default function PorVencerPage() {
                   <th>N° de Ticket</th>
                   <th>Comentarios</th>
                   <th>N° Tarea</th>
-                  <th>Estado</th>
+                  <th>Estado Tarea</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,6 +564,8 @@ export default function PorVencerPage() {
                 ) : (
                   filteredServiciosEntrega.map((orden) => {
                     const rowKey = `srv-${orden.oc}-${orden.id}`;
+                    // Estado de la tarea (no el estado de la OC)
+                    const estadoTarea = orden.estado_tarea || 'PENDIENTE';
                     return (
                       <tr key={rowKey}>
                         <td>
@@ -428,7 +595,7 @@ export default function PorVencerPage() {
                           </span>
                         </td>
                         <td>
-                          <StatusBadge estado={orden.estado} />
+                          <StatusBadge estado={estadoTarea} />
                         </td>
                       </tr>
                     );
